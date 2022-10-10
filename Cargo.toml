@@ -1,9 +1,6 @@
-[package]
-name = "shompy"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-cursive = { version = "0.20", features = ["ansi"] }
+[workspace]
+members = [
+  "prisma",
+  "ui"
+]
+resolver = "2"

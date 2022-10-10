@@ -1,0 +1,10 @@
+[package]
+name = "ui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cursive = { version = "0.20", features = ["ansi", "toml"] }
+prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.1" }
+tokio = "1.21.2"
+serde = "1.0.145"

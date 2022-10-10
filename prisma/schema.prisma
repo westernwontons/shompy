@@ -1,0 +1,14 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "cargo prisma"
+  output   = "../ui/src/prisma.rs"
+}
+
+model User {
+  id          String @id
+  displayName String
+}
