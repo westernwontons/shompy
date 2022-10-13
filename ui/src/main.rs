@@ -1,104 +1,33 @@
-#![allow(unused_variables, unused_mut, unused_imports, dead_code)]
+#![allow(unused_variables, unused_mut, dead_code)]
 
-mod global_callbacks;
-mod layers;
-
-use std::error::Error;
-
-use cursive::reexports::crossbeam_channel::Select;
-use cursive::traits::*;
-use cursive::views::{
-  Button, Dialog, DummyView, EditView, LinearLayout, ResizedView, SelectView,
-};
-use cursive::Cursive;
-
+mod dialogs;
+mod global_handlers;
 mod prisma;
 
-use prisma::PrismaClient;
-use prisma_client_rust::NewClientError;
+use global_handlers::{MenuConfig, QuitHandler};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-  // Storing stuff in an sqlite database for dev, prod will be postgres
-  let client: PrismaClient = prisma::new_client().await?;
-
+async fn main() {
+  // instantiate a Cursive instance
   let mut siv = cursive::default();
 
-  // adds the exit on 'q' press command with a confirmation window
-  global_callbacks::add_quit_handler(&mut siv);
+  // adds the exit on 'q' press with a confirmation window
+  QuitHandler::default().add_global_quit_handler(&mut siv);
 
-  let select = SelectView::<String>::new()
-    .on_submit(on_submit)
-    .with_name("select")
-    .fixed_size::<(u32, u32)>((10, 5));
+  // Configures the menu at the top
+  MenuConfig::new(&mut siv, false).configure();
 
-  let buttons = LinearLayout::vertical()
-    .child(Button::new("Add new", add_name))
-    .child(Button::new("Delete", delete_name))
-    .child(DummyView)
-    .child(Button::new("Quit", Cursive::quit));
+  // Storing stuff in an sqlite database for dev, prod will be postgres
+  let _client = prisma::new_client().await;
 
-  siv.add_layer(layers(select, buttons));
+  // Failing to instantiate a client should result in a quit (for now)
+  let client = match _client {
+    Ok(success) => success,
+    Err(error) => {
+      dialogs::quit_dialog(&mut siv);
+      return siv.run();
+    }
+  };
 
   siv.run();
-
-  Ok(())
-}
-
-fn on_submit(s: &mut Cursive, name: &str) {
-  s.add_layer(
-    Dialog::text(format!("Name: {}", name))
-      .title(format!("{}'s info", name))
-      .button("Back", |s| {
-        s.pop_layer();
-      }),
-  );
-}
-
-fn add_name(s: &mut Cursive) {
-  fn ok(s: &mut Cursive, name: &str) {
-    s.call_on_name("select", |view: &mut SelectView<String>| {
-      view.add_item_str(name);
-    });
-    s.pop_layer();
-  }
-
-  s.add_layer(
-    Dialog::around(
-      EditView::new()
-        .on_submit(ok)
-        .with_name("name")
-        .fixed_width(10),
-    )
-    .title("Enter new name")
-    .button("Ok", |s| {
-      let name = s
-        .call_on_name("name", |view: &mut EditView| view.get_content())
-        .unwrap();
-      ok(s, &name);
-    })
-    .button("Cancel", |s| {
-      s.pop_layer();
-    }),
-  )
-}
-
-fn delete_name(s: &mut Cursive) {
-  let mut select = s.find_name::<SelectView<String>>("select").unwrap();
-  match select.selected_id() {
-    None => s.add_layer(Dialog::info("No name to remove")),
-    Some(focus) => {
-      select.remove_item(focus);
-    }
-  }
-}
-
-fn layers(select: impl View, buttons: impl View) -> Dialog {
-  Dialog::around(
-    LinearLayout::horizontal()
-      .child(select)
-      .child(DummyView)
-      .child(buttons),
-  )
-  .title("Select a profile")
 }
