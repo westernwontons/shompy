@@ -7,11 +7,11 @@ use cursive::{
   },
   Cursive, CursiveRunnable
 };
-use prisma_client_rust::chrono::DateTime;
+use prisma_client_rust::{chrono::DateTime, QueryError};
 
 use crate::{
   helpers::{add_button_cb, pop_cursive_layer},
-  prisma::PrismaClient
+  prisma::{food::Data, PrismaClient}
 };
 
 /// Container for PrismaClient and a callback sink provided by Cursive
@@ -54,10 +54,9 @@ impl Model {
 /// TODO dynamic sizing
 pub fn new_dialog(
   model: Arc<Model>,
-  dialog_name: String,
-  dialog_title: String
+  dialog_name: &str,
+  dialog_title: &'static str
 ) -> NamedView<Dialog> {
-  let cloned_dialog_name = dialog_name.clone();
   Dialog::around(
     LinearLayout::vertical()
       .child(DummyView)
@@ -65,7 +64,7 @@ pub fn new_dialog(
         Dialog::around(new_menu_item())
           .button("Add", add_button_cb)
           .button("Commit", move |s| {
-            on_commit(s, Model::clone(&model), cloned_dialog_name.clone())
+            on_commit(s, Model::clone(&model), dialog_title)
           })
           .button("Back", pop_cursive_layer)
       )
@@ -133,52 +132,83 @@ pub fn delete_item(s: &mut Cursive, item: &str) {
   }
 }
 
-/// Action to do on press of the `Commit` button
-pub fn on_commit(s: &mut Cursive, model: Arc<Model>, dialog_name: String) {
-  fn handle_commit(s: &mut Cursive, model: Arc<Model>, dialog_name: String) {
-    let select_view_items = s
-      .call_on_name("select_item", |select_view: &mut SelectView<String>| {
-        let len = select_view.len();
+fn handle_commit(s: &mut Cursive, model: Arc<Model>, dialog_name: &str) {
+  let mut _len = 0;
+  let select_view_items = s
+    .call_on_name("select_item", |select_view: &mut SelectView<String>| {
+      let len = select_view.len();
+      _len = len;
 
-        (0..len)
-          .map(|index| {
-            select_view
-              .get_item(index)
-              // we only need the items's name, not the index
-              .map(|(_str, _string)| _str.to_owned())
-              .unwrap()
-          })
-          .collect::<Vec<_>>()
-      })
-      .unwrap();
+      (0..len)
+        .map(|index| {
+          select_view
+            .get_item(index)
+            // we only need the items's name, not the index
+            .map(|(_name, _index)| {
+              _name
+                .split("|")
+                .map(|element| element.trim().to_string())
+                .collect::<Vec<_>>()
+            })
+            .unwrap()
+        })
+        .collect::<Vec<_>>()
+    })
+    .unwrap();
 
-    // handle the db update in a task
-    tokio::spawn(async move {
-      let prisma = model.get_prisma();
+  let _dialog_name = dialog_name.to_string();
+
+  // handle the db update in a task
+  tokio::spawn(async move {
+    let prisma = model.get_prisma();
+
+    let mut results_vec = Vec::<Result<Data, QueryError>>::with_capacity(_len);
+
+    for mut element in select_view_items.into_iter() {
+      element[2].push_str(" 00:00:00 +0000");
+
+      let product_name = element[0].clone();
+      let product_price = element[1].parse::<f64>().unwrap();
+      let product_date_of_purchase =
+        DateTime::parse_from_str(element[2].as_str(), "%Y/%m/%d %H:%M:%S %z")
+          .unwrap();
 
       let result = prisma
         .food()
         .create(
-          dialog_name,
-          select_view_items[0].clone(),
-          select_view_items[1].parse::<f64>().unwrap(),
-          DateTime::parse_from_str(
-            select_view_items[2].as_str(),
-            "%Y/%m/%d %H:%M:%S"
-          )
-          .unwrap(),
+          _dialog_name.clone(),
+          product_name,
+          product_price,
+          product_date_of_purchase,
           vec![]
         )
         .exec()
         .await;
 
-      match result {
-        Ok(ok) => todo!(),
-        Err(err) => todo!()
-      }
-    });
-  }
+      results_vec.push(result);
+    }
 
+    // only keep the errors
+    // later I might prompt to retry if appropriate
+    results_vec.retain(|element| element.is_err());
+
+    // let the user know about errors
+    if !results_vec.is_empty() {
+      model.use_cb_sink(|sink| {
+        sink
+          .send(Box::new(|s| {
+            s.pop_layer();
+
+            s.add_layer(Dialog::info("Error sending data to database"));
+          }))
+          .unwrap()
+      });
+    }
+  });
+}
+
+/// Action to do on press of the `Commit` button
+pub fn on_commit(s: &mut Cursive, model: Arc<Model>, dialog_title: &str) {
   let select_view_items_len = s
     .find_name::<SelectView<String>>("select_item")
     .unwrap()
@@ -189,10 +219,11 @@ pub fn on_commit(s: &mut Cursive, model: Arc<Model>, dialog_name: String) {
     return s.add_layer(Dialog::info("List is empty. Nothing to commit."));
   }
 
+  let _dialog_title = dialog_title.to_owned();
   s.add_layer(
     Dialog::around(TextView::new("Commit following items?"))
       .button("Commit", move |s| {
-        handle_commit(s, Model::clone(&model), dialog_name.clone())
+        handle_commit(s, Model::clone(&model), _dialog_title.as_str())
       })
       .dismiss_button("Cancel")
   )

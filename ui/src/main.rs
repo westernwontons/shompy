@@ -50,8 +50,8 @@ async fn main() {
 
         s.add_layer(new_dialog(
           Model::clone(&meat_model),
-          "meat_dialog".to_string(),
-          "Meat".to_string()
+          "meat_dialog",
+          "Meat"
         ));
       })
       .leaf("Vegetable", move |s| {
@@ -60,8 +60,8 @@ async fn main() {
 
         s.add_layer(new_dialog(
           Model::clone(&vegetable_model),
-          "vegetable_dialog".to_string(),
-          "Vegetable".to_string()
+          "vegetable_dialog",
+          "Vegetable"
         ));
       })
       .leaf("Fruit", move |s| {
@@ -70,8 +70,8 @@ async fn main() {
 
         s.add_layer(new_dialog(
           Model::clone(&fruit_model),
-          "fruit_dialog".to_string(),
-          "Fruit".to_string()
+          "fruit_dialog",
+          "Fruit"
         ));
       })
       .leaf("Side", move |s| {
@@ -80,8 +80,8 @@ async fn main() {
 
         s.add_layer(new_dialog(
           Model::clone(&side_model),
-          "side_dialog".to_string(),
-          "Side".to_string()
+          "side_dialog",
+          "Side"
         ));
       })
       .leaf("Bread", move |s| {
@@ -90,8 +90,8 @@ async fn main() {
 
         s.add_layer(new_dialog(
           Model::clone(&bread_model),
-          "bread_dialog".to_string(),
-          "Bread".to_string()
+          "bread_dialog",
+          "Bread"
         ));
       })
       .leaf("Pasta", move |s| {
@@ -100,8 +100,8 @@ async fn main() {
 
         s.add_layer(new_dialog(
           Model::clone(&pasta_model),
-          "pasta_dialog".to_string(),
-          "Pasta".to_string()
+          "pasta_dialog",
+          "Pasta"
         ));
       })
       .leaf("Ingredients", move |s| {
@@ -110,8 +110,8 @@ async fn main() {
 
         s.add_layer(new_dialog(
           Model::clone(&ingredient_model),
-          "ingredient_dialog".to_string(),
-          "Ingredient".to_string()
+          "ingredient_dialog",
+          "Ingredient"
         ));
       })
   );

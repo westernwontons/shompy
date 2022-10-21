@@ -53,7 +53,7 @@ pub fn add_button_cb(s: &mut Cursive) {
 
   // We need to check whether the date provided is the correct format
   match NaiveDate::parse_from_str(items_added[2].as_str(), "%Y/%m/%d") {
-    Ok(date) => {}
+    Ok(_) => {}
     Err(err) => {
       return s.add_layer(Dialog::info(
         "Date provided is not the correct format. Use YYYY/MM/DD"
