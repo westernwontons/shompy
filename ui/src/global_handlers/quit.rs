@@ -10,8 +10,8 @@ pub struct QuitHandler {
 impl Default for QuitHandler {
   fn default() -> Self {
     Self {
-      text: "Are you sure you want to quit?".into(),
-      title: "Quit".into(),
+      text: "Are you sure you want to quit?",
+      title: "Quit",
     }
   }
 }

@@ -1,16 +1,12 @@
 use cursive::{
   views::{Dialog, TextView},
-  CursiveRunnable,
+  Cursive, CursiveRunnable
 };
 
-pub fn quit_dialog(cursive: &mut CursiveRunnable) {
+/// A dialog that's triggered if Prisma initialization fails
+pub fn prisma_init_error_quit_dialog(cursive: &mut CursiveRunnable) {
   cursive.add_layer(
-    Dialog::around(TextView::new("Are you sure you want to quit?"))
-      .button("Yes", |s| {
-        s.quit();
-      })
-      .button("No", |s| {
-        s.pop_layer();
-      }),
+    Dialog::around(TextView::new("Failed to initialize prisma. Quitting"))
+      .button("Quit", Cursive::quit)
   )
 }

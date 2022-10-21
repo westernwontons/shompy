@@ -8,7 +8,10 @@ generator client {
   output   = "../ui/src/prisma.rs"
 }
 
-model User {
-  id          Int    @id @default(autoincrement())
-  displayName String
+model Food {
+  id        Int      @id @default(autoincrement())
+  food_type String   @db.VarChar(20)
+  name      String   @db.VarChar(200)
+  price     Float    @db.Real
+  date      DateTime @db.Date
 }
