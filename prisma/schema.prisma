@@ -10,8 +10,10 @@ generator client {
 
 model Food {
   id        Int      @id @default(autoincrement())
-  food_type String   @db.VarChar(20)
-  name      String   @db.VarChar(200)
+  food_type String   @db.VarChar(100)
+  name      String   @db.VarChar(100)
   price     Float    @db.Real
+  amount    Float    @db.Real
+  total     Float    @db.Real
   date      DateTime @db.Date
 }

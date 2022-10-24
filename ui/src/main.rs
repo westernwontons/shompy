@@ -1,13 +1,19 @@
 #![allow(unused_variables, unused_mut, dead_code)]
+#![feature(slice_concat_trait)]
 
-mod dialogs;
-mod global_handlers;
-mod helpers;
+mod buttons;
+mod callbacks;
+mod item;
+mod model;
 mod prisma;
 
-use cursive::menu::Tree;
-use dialogs::{new_dialog, Model};
-use global_handlers::{MenuConfig, QuitHandler};
+use buttons::create_leaf;
+use cursive::{
+  menu::Tree,
+  views::{Dialog, TextView},
+  Cursive
+};
+use model::Model;
 
 #[tokio::main]
 async fn main() {
@@ -15,16 +21,32 @@ async fn main() {
   let mut siv = cursive::default();
 
   // adds the exit on 'q' press with a confirmation window
-  QuitHandler::default().add_global_quit_handler(&mut siv);
+  siv.set_global_callback('q', move |s| {
+    s.add_layer(
+      Dialog::text("Are you sure you want to quit?")
+        .title("Quit")
+        .button("Yes", |s| s.quit())
+        .button("No", |s| {
+          s.pop_layer();
+        })
+    )
+  });
 
   // Configures the menu at the top
-  MenuConfig::new(&mut siv, false).configure();
+  siv.set_autohide_menu(true);
+  siv.add_global_callback(cursive::event::Key::Esc, |s| {
+    s.select_menubar();
+  });
 
   // Failing to instantiate a client should result in a quit (for now)
   let client = match prisma::new_client().await {
     Ok(success) => success,
     Err(error) => {
-      dialogs::prisma_init_error_quit_dialog(&mut siv);
+      siv.add_layer(
+        Dialog::around(TextView::new("Failed to initialize prisma. Quitting"))
+          .button("Quit", Cursive::quit)
+      );
+
       return siv.run();
     }
   };
@@ -45,74 +67,35 @@ async fn main() {
     "Food",
     Tree::new()
       .leaf("Meat", move |s| {
-        // Pop previous layer
-        s.pop_layer();
-
-        s.add_layer(new_dialog(
-          Model::clone(&meat_model),
-          "meat_dialog",
-          "Meat"
-        ));
+        create_leaf(s, Model::clone(&meat_model), "meat_dialog", "Meat")
       })
       .leaf("Vegetable", move |s| {
-        // Pop previous layer
-        s.pop_layer();
-
-        s.add_layer(new_dialog(
+        create_leaf(
+          s,
           Model::clone(&vegetable_model),
           "vegetable_dialog",
           "Vegetable"
-        ));
+        )
       })
       .leaf("Fruit", move |s| {
-        // Pop previous layer
-        s.pop_layer();
-
-        s.add_layer(new_dialog(
-          Model::clone(&fruit_model),
-          "fruit_dialog",
-          "Fruit"
-        ));
+        create_leaf(s, Model::clone(&fruit_model), "fruit_dialog", "Fruit")
       })
       .leaf("Side", move |s| {
-        // Pop previous layer
-        s.pop_layer();
-
-        s.add_layer(new_dialog(
-          Model::clone(&side_model),
-          "side_dialog",
-          "Side"
-        ));
+        create_leaf(s, Model::clone(&side_model), "side_dialog", "Side")
       })
       .leaf("Bread", move |s| {
-        // Pop previous layer
-        s.pop_layer();
-
-        s.add_layer(new_dialog(
-          Model::clone(&bread_model),
-          "bread_dialog",
-          "Bread"
-        ));
+        create_leaf(s, Model::clone(&bread_model), "bread_dialog", "Bread")
       })
       .leaf("Pasta", move |s| {
-        // Pop previous layer
-        s.pop_layer();
-
-        s.add_layer(new_dialog(
-          Model::clone(&pasta_model),
-          "pasta_dialog",
-          "Pasta"
-        ));
+        create_leaf(s, Model::clone(&pasta_model), "pasta_dialog", "Pasta");
       })
       .leaf("Ingredients", move |s| {
-        // Pop previous layer
-        s.pop_layer();
-
-        s.add_layer(new_dialog(
+        create_leaf(
+          s,
           Model::clone(&ingredient_model),
           "ingredient_dialog",
           "Ingredient"
-        ));
+        )
       })
   );
 
