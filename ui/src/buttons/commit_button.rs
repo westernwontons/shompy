@@ -60,7 +60,7 @@ pub fn commit_button(s: &mut Cursive, model: Arc<Model>, dialog_name: String) {
 /// but then the question arises how am I going to validate each of it's fields. Maybe later
 fn handle_commit(s: &mut Cursive, dialog_name: String, model: Arc<Model>) {
   s.call_on_name("select_item", |select_view: &mut SelectView<Item>| {
-    let mut food_items = Vec::<FoodItem>::new();
+    let mut food_items = Vec::<FoodItem>::with_capacity(10);
 
     for idx in 0..select_view.len() {
       let (_, item) = select_view.get_item(idx).unwrap();
@@ -81,7 +81,7 @@ fn handle_commit(s: &mut Cursive, dialog_name: String, model: Arc<Model>) {
 
       // collect the result of the query and if any of them fail, let the user know about it
       // i'm interested in handling the errors in a create_many so that if any fails, I can rewind the whole transaction
-      let mut results = Vec::<Result<Data, QueryError>>::new();
+      let mut results = Vec::<Result<Data, QueryError>>::with_capacity(10);
 
       for result in create {
         results.push(result.await);
